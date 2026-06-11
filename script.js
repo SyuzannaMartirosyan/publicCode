@@ -33,7 +33,7 @@
   transform: rotateY(180deg);
 }
 
-/* Только desktop hover */
+
 .sports-tv[data-mode="hover"]:hover {
   width: 420px;
   height: 260px;
