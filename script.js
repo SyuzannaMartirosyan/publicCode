@@ -5,6 +5,7 @@
 
   const BREAKPOINT = 1000;
   let currentMode = null;
+  let resizeTimer = null;
 
   const style = document.createElement("style");
   style.id = "sports-tv-style";
@@ -32,7 +33,6 @@
 .sports-tv.is-active .sports-tv__inner {
   transform: rotateY(180deg);
 }
-
 
 .sports-tv[data-mode="hover"]:hover {
   width: 420px;
@@ -192,6 +192,15 @@
     width: 96vw !important;
     height: 66vw !important;
   }
+
+  .sports-tv[data-mode="hover"]:hover {
+    width: 200px;
+    height: 160px;
+  }
+
+  .sports-tv[data-mode="hover"]:hover .sports-tv__inner {
+    transform: none;
+  }
 }
 
 @keyframes tvFloat {
@@ -229,7 +238,8 @@
             <iframe
               id="sportsVideo"
               title="YouTube video player"
-              allow="autoplay; encrypted-media; picture-in-picture"
+              allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+              referrerpolicy="strict-origin-when-cross-origin"
               allowfullscreen>
             </iframe>
           </div>
@@ -244,25 +254,29 @@
   const iframe = wrapper.querySelector("#sportsVideo");
 
   const videoUrl =
-    "https://www.youtube.com/embed/4zRt8f5KF00?autoplay=1&mute=1&playsinline=1&rel=0";
+    "https://www.youtube.com/embed/4zRt8f5KF00?autoplay=1&mute=1&playsinline=1&rel=0&enablejsapi=1&origin=" +
+    encodeURIComponent(location.origin);
 
   function isMobileMode() {
     return window.innerWidth <= BREAKPOINT;
   }
 
-  function startVideo() {
-    console.log("[SPORTS-TV] startVideo");
-    sportsTv.classList.add("is-active");
-
+  function preloadVideo() {
     if (!iframe.src) {
+      console.log("[SPORTS-TV] preloadVideo");
       iframe.src = videoUrl;
     }
+  }
+
+  function startVideo() {
+    console.log("[SPORTS-TV] startVideo");
+    preloadVideo();
+    sportsTv.classList.add("is-active");
   }
 
   function stopVideo() {
     console.log("[SPORTS-TV] stopVideo");
     sportsTv.classList.remove("is-active");
-    iframe.src = "";
   }
 
   function applyMode() {
@@ -275,15 +289,20 @@
 
     console.log("[SPORTS-TV] mode changed:", nextMode);
 
-    stopVideo();
+    sportsTv.classList.remove("is-active");
+    preloadVideo();
   }
 
   function handleMouseEnter() {
-    if (currentMode === "hover") startVideo();
+    if (currentMode === "hover") {
+      startVideo();
+    }
   }
 
   function handleMouseLeave() {
-    if (currentMode === "hover") stopVideo();
+    if (currentMode === "hover") {
+      stopVideo();
+    }
   }
 
   function handleClick(event) {
@@ -309,7 +328,11 @@
   });
 
   window.addEventListener("resize", function () {
-    applyMode();
+    clearTimeout(resizeTimer);
+
+    resizeTimer = setTimeout(function () {
+      applyMode();
+    }, 150);
   });
 
   function updateVisibility() {
@@ -318,11 +341,17 @@
 
     wrapper.style.display = isHome ? "block" : "none";
 
-    if (!isHome) stopVideo();
+    if (!isHome) {
+      stopVideo();
+    } else {
+      preloadVideo();
+    }
   }
 
   applyMode();
   updateVisibility();
+
+  setTimeout(preloadVideo, 800);
 
   let lastUrl = location.href;
 
