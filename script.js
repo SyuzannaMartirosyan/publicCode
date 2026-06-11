@@ -1,58 +1,46 @@
 (function () {
   console.log("[SPORTS-TV] Starting injector");
 
-  if (document.getElementById("sports-tv-widget")) {
-    console.log("[SPORTS-TV] Widget already exists");
-    return;
-  }
+  if (document.getElementById("sports-tv-widget")) return;
 
-  
+  const BREAKPOINT = 1000;
+  let currentMode = null;
+
   const style = document.createElement("style");
   style.id = "sports-tv-style";
   style.textContent = `
+* { box-sizing: border-box; }
 
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  min-height: 100vh;
-  background: #07111f;
-  font-family: Arial, sans-serif;
-}
-@media (max-width: 1000px) {
-  .sports-tv {
-    left: 4px !important;
-    bottom: 46px !important;
-  }
-    .sports-tv:hover {
-  width: 96vw !important;
-  height: 66vw!important;
-}
-}
 .sports-tv {
   position: fixed;
   left: 300px;
   bottom: 32px;
-
   width: 200px;
   height: 160px;
-
   perspective: 1200px;
   transform-origin: left bottom;
-
   animation: tvFloat 4s ease-in-out infinite;
-  z-index: 9999;
-
-  transition:
-    width 0.7s ease,
-    height 0.7s ease;
+  z-index: 999999;
+  transition: width .7s ease, height .7s ease;
 }
 
-.sports-tv:hover {
+.sports-tv.is-active {
   width: 420px;
   height: 260px;
+}
+
+.sports-tv.is-active .sports-tv__inner {
+  transform: rotateY(180deg);
+}
+
+/* Только desktop hover */
+.sports-tv[data-mode="hover"]:hover {
+  width: 420px;
+  height: 260px;
+}
+
+.sports-tv[data-mode="hover"]:hover .sports-tv__inner {
+  transform: rotateY(180deg);
 }
 
 .sports-tv__inner {
@@ -60,11 +48,7 @@ body {
   height: 100%;
   position: relative;
   transform-style: preserve-3d;
-  transition: transform 0.9s ease;
-}
-
-.sports-tv:hover .sports-tv__inner {
-  transform: rotateY(180deg);
+  transition: transform .9s ease;
 }
 
 .sports-tv__front,
@@ -74,19 +58,16 @@ body {
   border-radius: 24px;
   backface-visibility: hidden;
   overflow: hidden;
-  background: rgba(7, 17, 31, 0.35);
-  border: 1px solid rgba(255,255,255,0.1);
-
+  background: rgba(7,17,31,.35);
+  border: 1px solid rgba(255,255,255,.1);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   box-shadow:
-    0 20px 50px rgba(0, 0, 0, 0.5),
-    inset 0 0 24px rgba(0, 189, 255, 0.18);
+    0 20px 50px rgba(0,0,0,.5),
+    inset 0 0 24px rgba(0,189,255,.18);
 }
 
-.sports-tv__front {
-  padding: 8px;
-}
+.sports-tv__front { padding: 8px; }
 
 .sports-tv__screen {
   position: relative;
@@ -94,16 +75,10 @@ body {
   height: 100%;
   border-radius: 17px;
   overflow: hidden;
-
-  
-
-
   box-shadow:
-    inset 0 0 0 1px rgba(2, 102, 0, 0.06),
-    inset 0 0 34px rgba(0, 187, 255, 0.18),
-    0 0 22px rgba(89, 205, 248, 0.24);
-
-  color: white;
+    inset 0 0 34px rgba(0,187,255,.18),
+    0 0 22px rgba(89,205,248,.24);
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -115,8 +90,8 @@ body {
   inset: 0;
   background: repeating-linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.025) 0px,
-    rgba(255, 255, 255, 0.025) 1px,
+    rgba(255,255,255,.025) 0px,
+    rgba(255,255,255,.025) 1px,
     transparent 2px,
     transparent 4px
   );
@@ -131,8 +106,8 @@ body {
   z-index: 3;
   background: linear-gradient(
     120deg,
-    rgba(255, 255, 255, 0.22) 0%,
-    rgba(255, 255, 255, 0.06) 24%,
+    rgba(255,255,255,.22) 0%,
+    rgba(255,255,255,.06) 24%,
     transparent 42%
   );
 }
@@ -142,21 +117,17 @@ body {
   top: 4px;
   right: 4px;
   z-index: 4;
-
   display: flex;
   align-items: center;
   gap: 6px;
-
   padding: 4px 8px;
   border-radius: 999px;
-
   font-size: 10px;
   font-weight: 900;
-  letter-spacing: 0.8px;
-
+  letter-spacing: .8px;
   color: #fff;
-  background: rgba(255, 0, 0, 0.22);
-  border: 1px solid rgba(255, 80, 80, 0.45);
+  background: rgba(255,0,0,.22);
+  border: 1px solid rgba(255,80,80,.45);
 }
 
 .sports-tv__live span {
@@ -164,30 +135,8 @@ body {
   height: 8px;
   border-radius: 50%;
   background: #ff3d3d;
-  box-shadow:
-    0 0 8px #ff3d3d,
-    0 0 14px #ff3d3d;
+  box-shadow: 0 0 8px #ff3d3d, 0 0 14px #ff3d3d;
   animation: livePulse 1.2s infinite;
-}
-
-.sports-tv__score {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  z-index: 4;
-
-  display: flex;
-  align-items: center;
-  gap: 9px;
-
-  font-size: 11px;
-  font-weight: 900;
-  color: white;
-}
-
-.sports-tv__score-num {
-  color: #caff00;
-  font-size: 15px;
 }
 
 .sports-tv__content {
@@ -199,18 +148,11 @@ body {
 
 .sports-tv__label {
   display: block;
-  margin-top: 8px;
-  margin-bottom: 4px;
-  color: rgb(0, 189, 255);
+  margin: 8px 0 4px;
+  color: rgb(0,189,255);
   font-size: 18px;
   letter-spacing: 2px;
   font-weight: 900;
-}
-
-.sports-tv__content h3 {
-  margin: 0 0 8px;
-  font-size: 22px;
-  line-height: 1.08;
 }
 
 .sports-tv__content p {
@@ -237,150 +179,156 @@ body {
   width: 100%;
   height: 100%;
   display: block;
+  border: 0;
 }
 
+@media (max-width: 1000px) {
+  .sports-tv {
+    left: 4px !important;
+    bottom: 46px !important;
+  }
 
-
-
-
+  .sports-tv.is-active {
+    width: 96vw !important;
+    height: 66vw !important;
+  }
+}
 
 @keyframes tvFloat {
-  0%, 100% {
-    transform: translateY(0) rotate(-1deg);
-  }
-
-  50% {
-    transform: translateY(-12px) rotate(2deg);
-  }
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-12px) rotate(2deg); }
 }
 
 @keyframes livePulse {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-
-  50% {
-    transform: scale(1.25);
-    opacity: 0.7;
-  }
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.25); opacity: .7; }
 }
+`;
 
-  `;
   document.head.appendChild(style);
-
-  console.log("[SPORTS-TV] Styles injected");
-
 
   const wrapper = document.createElement("div");
   wrapper.id = "sports-tv-widget";
 
   wrapper.innerHTML = `
-   <div class="sports-tv">
-  <div class="sports-tv__inner">
-
-    <div class="sports-tv__front">
-
-
-      <div class="sports-tv__screen">
-        <div class="sports-tv__glass"></div>
-
-        <div class="sports-tv__live">
-          <span></span>
-          LIVE
+    <div class="sports-tv">
+      <div class="sports-tv__inner">
+        <div class="sports-tv__front">
+          <div class="sports-tv__screen">
+            <div class="sports-tv__glass"></div>
+            <div class="sports-tv__live"><span></span>LIVE</div>
+            <div class="sports-tv__content">
+              <span class="sports-tv__label">SPORTS CHANNEL</span>
+              <p>Hover or tap to watch live action</p>
+            </div>
+          </div>
         </div>
 
-        
-
-        <div class="sports-tv__content">
-          <span class="sports-tv__label">SPORTS CHANNEL</span>
-       
-          <p>Hover to watch live action</p>
+        <div class="sports-tv__back">
+          <div class="sports-tv__video">
+            <iframe
+              id="sportsVideo"
+              title="YouTube video player"
+              allow="autoplay; encrypted-media; picture-in-picture"
+              allowfullscreen>
+            </iframe>
+          </div>
         </div>
       </div>
     </div>
-
-    <div class="sports-tv__back">
-      <div class="sports-tv__video">
-        <iframe
-          id="sportsVideo"
-          title="YouTube video player"
-          frameborder="0"
-          allow="autoplay; encrypted-media; picture-in-picture"
-          allowfullscreen>
-        </iframe>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-<script>
-const sportsTv = document.querySelector(".sports-tv");
-const iframe = document.getElementById("sportsVideo");
-
-const videoUrl =
-  "https://www.youtube.com/embed/4zRt8f5KF00?autoplay=1&mute=1&playsinline=1&rel=0";
-
-sportsTv.addEventListener("mouseenter", () => {
-  iframe.src = videoUrl;
-});
-
-sportsTv.addEventListener("mouseleave", () => {
-  iframe.src = "";
-});
-</script>
-
   `;
 
   document.body.appendChild(wrapper);
 
-  console.log("[SPORTS-TV] Widget rendered");
-
-
   const sportsTv = wrapper.querySelector(".sports-tv");
-  const iframe = wrapper.querySelector("iframe");
+  const iframe = wrapper.querySelector("#sportsVideo");
 
   const videoUrl =
     "https://www.youtube.com/embed/4zRt8f5KF00?autoplay=1&mute=1&playsinline=1&rel=0";
 
-  sportsTv.addEventListener("mouseenter", () => {
-    console.log("[SPORTS-TV] Hover start");
-    iframe.src = videoUrl;
+  function isMobileMode() {
+    return window.innerWidth <= BREAKPOINT;
+  }
+
+  function startVideo() {
+    console.log("[SPORTS-TV] startVideo");
+    sportsTv.classList.add("is-active");
+
+    if (!iframe.src) {
+      iframe.src = videoUrl;
+    }
+  }
+
+  function stopVideo() {
+    console.log("[SPORTS-TV] stopVideo");
+    sportsTv.classList.remove("is-active");
+    iframe.src = "";
+  }
+
+  function applyMode() {
+    const nextMode = isMobileMode() ? "click" : "hover";
+
+    if (nextMode === currentMode) return;
+
+    currentMode = nextMode;
+    sportsTv.dataset.mode = nextMode;
+
+    console.log("[SPORTS-TV] mode changed:", nextMode);
+
+    stopVideo();
+  }
+
+  function handleMouseEnter() {
+    if (currentMode === "hover") startVideo();
+  }
+
+  function handleMouseLeave() {
+    if (currentMode === "hover") stopVideo();
+  }
+
+  function handleClick(event) {
+    if (currentMode !== "click") return;
+
+    event.stopPropagation();
+
+    if (sportsTv.classList.contains("is-active")) {
+      stopVideo();
+    } else {
+      startVideo();
+    }
+  }
+
+  sportsTv.addEventListener("mouseenter", handleMouseEnter);
+  sportsTv.addEventListener("mouseleave", handleMouseLeave);
+  sportsTv.addEventListener("click", handleClick);
+
+  document.addEventListener("click", function (event) {
+    if (currentMode === "click" && !wrapper.contains(event.target)) {
+      stopVideo();
+    }
   });
 
-  sportsTv.addEventListener("mouseleave", () => {
-    console.log("[SPORTS-TV] Hover end");
-    iframe.src = "";
+  window.addEventListener("resize", function () {
+    applyMode();
   });
 
   function updateVisibility() {
     const path = location.pathname.toLowerCase();
-
-    const isHome =
-      path === "/en" ||
-      path === "/en/";
-
-    console.log(
-      "[SPORTS-TV] Path:",
-      path,
-      "| Home:",
-      isHome
-    );
+    const isHome = path === "/en" || path === "/en/";
 
     wrapper.style.display = isHome ? "block" : "none";
+
+    if (!isHome) stopVideo();
   }
 
+  applyMode();
   updateVisibility();
 
   let lastUrl = location.href;
 
-  const observer = new MutationObserver(() => {
+  const observer = new MutationObserver(function () {
     if (lastUrl !== location.href) {
-      console.log("[SPORTS-TV] Route changed");
-
       lastUrl = location.href;
-
       updateVisibility();
     }
   });
@@ -390,30 +338,19 @@ sportsTv.addEventListener("mouseleave", () => {
     subtree: true,
   });
 
-  const pushState = history.pushState;
-
+  const originalPushState = history.pushState;
   history.pushState = function () {
-    pushState.apply(this, arguments);
-
-    console.log("[SPORTS-TV] pushState");
-
+    originalPushState.apply(this, arguments);
     setTimeout(updateVisibility, 0);
   };
 
-  const replaceState = history.replaceState;
-
+  const originalReplaceState = history.replaceState;
   history.replaceState = function () {
-    replaceState.apply(this, arguments);
-
-    console.log("[SPORTS-TV] replaceState");
-
+    originalReplaceState.apply(this, arguments);
     setTimeout(updateVisibility, 0);
   };
 
-  window.addEventListener("popstate", () => {
-    console.log("[SPORTS-TV] popstate");
-    updateVisibility();
-  });
+  window.addEventListener("popstate", updateVisibility);
 
   console.log("[SPORTS-TV] Ready");
 })();
